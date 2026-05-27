@@ -4,7 +4,7 @@
 #include <cstddef>
 #include <utility>
 #include <vector>
-
+#include "protolib/buffer.hpp"
 namespace protolib {
 
 class VectorStore {
@@ -21,14 +21,16 @@ public:
 
     std::size_t size() const;
     std::size_t dim() const;
+    std::size_t capacity() const;
+    const float* raw_data() const;
 
+    void reserve(std::size_t new_capacity);
 private:
     std::size_t m_dim;
     std::size_t m_size;
     std::size_t m_capacity;
-    float* m_data;
+    Buffer m_storage;
 
-    void reserve(std::size_t new_capacity);
     const float* vector_ptr(std::size_t idx) const;
     float* vector_ptr(std::size_t idx);
 };
