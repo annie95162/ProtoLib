@@ -17,6 +17,7 @@ include_directories(include)
 add_library(protolib
     src/buffer.cpp
     src/vector_store.cpp
+    src/distance.cpp
 )
 
 add_executable(demo examples/demo.cpp)
@@ -40,3 +41,8 @@ target_link_libraries(test_vector_store_gtest protolib GTest::GTest GTest::Main)
 
 add_test(NAME BufferGTest COMMAND test_buffer_gtest)
 add_test(NAME VectorStoreGTest COMMAND test_vector_store_gtest)
+
+add_executable(test_distance_gtest tests/test_distance_gtest.cpp)
+target_link_libraries(test_distance_gtest protolib GTest::GTest GTest::Main)
+
+add_test(NAME DistanceGTest COMMAND test_distance_gtest)
