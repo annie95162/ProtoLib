@@ -41,13 +41,8 @@
 *.dwo
 
 build/
-*.o
-*.out
-*.exe
-*.a
-*.so
-*.dll
-*.dylib
+build_asan/
+
 CMakeCache.txt
 CMakeFiles/
 Makefile
