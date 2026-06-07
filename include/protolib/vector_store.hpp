@@ -25,6 +25,10 @@ public:
     const float* raw_data() const;
 
     void reserve(std::size_t new_capacity);
+    void add_raw(const float* vectors, std::size_t n_vectors);
+
+    float* raw_data();
+    std::size_t raw_size() const;
 private:
     std::size_t m_dim;
     std::size_t m_size;

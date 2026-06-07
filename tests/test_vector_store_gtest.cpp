@@ -196,3 +196,34 @@ TEST(VectorStoreTest, CosineSearchHandlesStoredZeroVector) {
     EXPECT_EQ(result.first[1], 0u);
     EXPECT_FLOAT_EQ(result.second[1], 0.0f);
 }
+TEST(PipelineTest, CosineSearchWorksAfterMultipleAdds) {
+    VectorStore store(2);
+
+    std::vector<float> batch1 = {
+        1.0f, 0.0f,   // idx 0
+        0.0f, 1.0f    // idx 1
+    };
+
+    std::vector<float> batch2 = {
+        2.0f, 0.0f,   // idx 2
+        1.0f, 1.0f    // idx 3
+    };
+
+    store.add(batch1, 2);
+    store.add(batch2, 2);
+
+    std::vector<float> query = {1.0f, 0.0f};
+    auto result = store.search_cosine(query, 4);
+
+    ASSERT_EQ(result.first.size(), 4u);
+
+    // expected order:
+    // idx0 -> 1
+    // idx2 -> 1
+    // idx3 -> 1/sqrt(2)
+    // idx1 -> 0
+    EXPECT_EQ(result.first[0], 0u);
+    EXPECT_EQ(result.first[1], 2u);
+    EXPECT_EQ(result.first[2], 3u);
+    EXPECT_EQ(result.first[3], 1u);
+}

@@ -14,11 +14,7 @@ VectorStore::VectorStore(std::size_t dimension)
     }
 }
 
-void VectorStore::add(const std::vector<float>& vectors, std::size_t n_vectors) {
-    if (vectors.size() != n_vectors * m_dim) {
-        throw std::invalid_argument("input size does not match n_vectors * dim");
-    }
-
+void VectorStore::add_raw(const float* vectors, std::size_t n_vectors) {
     if (n_vectors == 0) {
         return;
     }
@@ -41,7 +37,7 @@ void VectorStore::add(const std::vector<float>& vectors, std::size_t n_vectors) 
     m_storage.resize(new_float_count);
 
     float* dst = m_storage.data() + old_float_count;
-    std::copy(vectors.begin(), vectors.end(), dst);
+    std::copy(vectors, vectors + n_vectors * m_dim, dst);
 
     for (std::size_t i = 0; i < n_vectors; ++i) {
         const float* vec_ptr = dst + i * m_dim;
@@ -49,6 +45,14 @@ void VectorStore::add(const std::vector<float>& vectors, std::size_t n_vectors) 
     }
 
     m_size = required_size;
+}
+
+void VectorStore::add(const std::vector<float>& vectors, std::size_t n_vectors) {
+    if (vectors.size() != n_vectors * m_dim) {
+        throw std::invalid_argument("input size does not match n_vectors * dim");
+    }
+
+    add_raw(vectors.data(), n_vectors);
 }
 
 std::pair<std::vector<std::size_t>, std::vector<float>>
@@ -187,4 +191,11 @@ float* VectorStore::vector_ptr(std::size_t idx) {
     return m_storage.data() + idx * m_dim;
 }
 
+float* VectorStore::raw_data() {
+    return m_storage.data();
+}
+
+std::size_t VectorStore::raw_size() const {
+    return m_size * m_dim;
+}
 }
