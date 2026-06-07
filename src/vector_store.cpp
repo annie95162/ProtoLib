@@ -4,6 +4,10 @@
 #include <stdexcept>
 #include <utility>
 #include <vector>
+#include <cstdint>
+#ifdef _OPENMP
+#include <omp.h>
+#endif
 
 namespace protolib {
 
@@ -69,6 +73,122 @@ VectorStore::search_l2(const std::vector<float>& query, std::size_t k) const {
         throw std::runtime_error("cannot search an empty store");
     }
 
+    std::vector<std::pair<std::size_t, float>> results(m_size);
+
+    #pragma omp parallel for if(m_size > 1000)
+    for (std::int64_t i = 0; i < static_cast<std::int64_t>(m_size); ++i) {
+        const float* vec = vector_ptr(static_cast<std::size_t>(i));
+        float dist = l2_distance(query.data(), vec, m_dim);
+        results[static_cast<std::size_t>(i)] = {
+            static_cast<std::size_t>(i), dist
+        };
+    }
+
+    std::size_t out_k = std::min(k, m_size);
+
+    std::partial_sort(
+        results.begin(),
+        results.begin() + out_k,
+        results.end(),
+        [](const std::pair<std::size_t, float>& a,
+           const std::pair<std::size_t, float>& b) {
+            if (a.second != b.second) {
+                return a.second < b.second;
+            }
+            return a.first < b.first;
+        });
+
+    std::vector<std::size_t> ids;
+    std::vector<float> values;
+    ids.reserve(out_k);
+    values.reserve(out_k);
+
+    for (std::size_t i = 0; i < out_k; ++i) {
+        ids.push_back(results[i].first);
+        values.push_back(results[i].second);
+    }
+
+    return {ids, values};
+}
+
+std::pair<std::vector<std::size_t>, std::vector<float>>
+VectorStore::search_cosine(const std::vector<float>& query, std::size_t k) const {
+    if (query.size() != m_dim) {
+        throw std::invalid_argument("query dimension does not match store dimension");
+    }
+
+    if (k == 0) {
+        throw std::invalid_argument("k must be greater than 0");
+    }
+
+    if (m_size == 0) {
+        throw std::runtime_error("cannot search an empty store");
+    }
+
+    float query_norm = l2_norm(query.data(), m_dim);
+    if (query_norm == 0.0f) {
+        throw std::invalid_argument("cosine search is undefined for a zero query vector");
+    }
+
+    std::vector<std::pair<std::size_t, float>> results(m_size);
+
+    #pragma omp parallel for if(m_size > 1000)
+    for (std::int64_t i = 0; i < static_cast<std::int64_t>(m_size); ++i) {
+        const std::size_t idx = static_cast<std::size_t>(i);
+        const float* vec = vector_ptr(idx);
+        float vec_norm = m_norms[idx];
+
+        float sim = 0.0f;
+        if (vec_norm != 0.0f) {
+            float dot = dot_product(query.data(), vec, m_dim);
+            sim = dot / (query_norm * vec_norm);
+        }
+
+        results[idx] = {idx, sim};
+    }
+
+    std::size_t out_k = std::min(k, m_size);
+
+    std::partial_sort(
+        results.begin(),
+        results.begin() + out_k,
+        results.end(),
+        [](const std::pair<std::size_t, float>& a,
+           const std::pair<std::size_t, float>& b) {
+            if (a.second != b.second) {
+                return a.second > b.second;
+            }
+            return a.first < b.first;
+        });
+
+    std::vector<std::size_t> ids;
+    std::vector<float> values;
+    ids.reserve(out_k);
+    values.reserve(out_k);
+
+    for (std::size_t i = 0; i < out_k; ++i) {
+        ids.push_back(results[i].first);
+        values.push_back(results[i].second);
+    }
+
+    return {ids, values};
+}
+
+/*
+std::pair<std::vector<std::size_t>, std::vector<float>>
+VectorStore::search_l2(const std::vector<float>& query, std::size_t k) const {
+    if (query.size() != m_dim) {
+        throw std::invalid_argument("query dimension does not match store dimension");
+    }
+
+    if (k == 0) {
+        throw std::invalid_argument("k must be greater than 0");
+    }
+
+    if (m_size == 0) {
+        throw std::runtime_error("cannot search an empty store");
+    }
+
     std::vector<std::pair<std::size_t, float>> results;
     results.reserve(m_size);
 
@@ -104,7 +224,9 @@ VectorStore::search_l2(const std::vector<float>& query, std::size_t k) const {
 
     return {ids, values};
 }
+*/
 
+/*
 std::pair<std::vector<std::size_t>, std::vector<float>>
 VectorStore::search_cosine(const std::vector<float>& query, std::size_t k) const {
     if (query.size() != m_dim) {
@@ -166,6 +288,7 @@ VectorStore::search_cosine(const std::vector<float>& query, std::size_t k) const
 
     return {ids, values};
 }
+*/
 
 std::size_t VectorStore::size() const { return m_size; }
 std::size_t VectorStore::dim() const { return m_dim; }
