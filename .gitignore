@@ -42,6 +42,8 @@
 
 build/
 build_asan/
+build_no_omp/
+build_omp/
 
 CMakeCache.txt
 CMakeFiles/
