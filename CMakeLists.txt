@@ -46,3 +46,8 @@ add_executable(test_distance_gtest tests/test_distance_gtest.cpp)
 target_link_libraries(test_distance_gtest protolib GTest::GTest GTest::Main)
 
 add_test(NAME DistanceGTest COMMAND test_distance_gtest)
+
+add_executable(test_pipeline_gtest tests/test_pipeline_gtest.cpp)
+target_link_libraries(test_pipeline_gtest protolib GTest::GTest GTest::Main)
+
+add_test(NAME PipelineGTest COMMAND test_pipeline_gtest)
