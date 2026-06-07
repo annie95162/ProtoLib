@@ -30,6 +30,7 @@ private:
     std::size_t m_size;
     std::size_t m_capacity;
     Buffer m_storage;
+    std::vector<float> m_norms;
 
     const float* vector_ptr(std::size_t idx) const;
     float* vector_ptr(std::size_t idx);
